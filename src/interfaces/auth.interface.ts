@@ -1,8 +1,10 @@
+import { ObjectId } from "mongoose";
+
 export interface IUser {
-  _id?: string; // optional if you don't need it explicitly
+  _id?: ObjectId; // optional if you don't need it explicitly
   email: string;
   name: string;
-  password: string;
+  password?: string;
   profilePic?: string;
   createdAt?: Date;
   updatedAt?: Date;

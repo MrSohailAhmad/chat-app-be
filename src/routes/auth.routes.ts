@@ -1,5 +1,13 @@
 import express from "express";
-import { login, logout, signup, update } from "../controllers/auth.controller";
+import {
+  checkAuth,
+  login,
+  logout,
+  signup,
+  update,
+  updateProfilePIcture,
+} from "../controllers/auth.controller";
+import { protectedRoutes } from "../middleware/auth.middlerware";
 
 export const authRoutes = express.Router();
 
@@ -9,4 +17,7 @@ authRoutes.post("/login", login);
 
 authRoutes.post("/logout", logout);
 
-authRoutes.patch("/update", update);
+authRoutes.patch("/update", protectedRoutes, update);
+authRoutes.patch("/update-pic", protectedRoutes, updateProfilePIcture);
+
+authRoutes.get("/check", protectedRoutes, checkAuth);

@@ -1,20 +1,21 @@
 import { NextFunction, Request, Response } from "express";
-import bcrypt from "bcryptjs";
 import { UserModel } from "../models/auth.model";
 import { sendResponse } from "../utils/sendResponse";
-import { generateToken } from "../utils/userToken";
-import mongoose from "mongoose";
+import {
+  compareHashedPassword,
+  generateHashedPassword,
+  generateToken,
+} from "../utils/utils";
+import cloudinary from "../lib/cloudinary";
 
 export const signup = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
-  const session = await mongoose.startSession();
   const { email, name, password } = req.body;
 
   try {
-    session.startTransaction();
     if (!email || !name || !password) {
       throw new Error("user fields are missing!");
     }
@@ -29,9 +30,7 @@ export const signup = async (
       throw new Error(`Email already associated with another user`);
     }
 
-    const salt = await bcrypt.genSalt(10);
-
-    const hashPassword = await bcrypt.hashSync(password, salt);
+    const hashPassword = await generateHashedPassword(password);
 
     const user: any = new UserModel({
       email,
@@ -45,9 +44,9 @@ export const signup = async (
         res,
       });
 
-      await user.save({ session });
+      await user.save();
     }
-    await session.commitTransaction();
+
     return sendResponse(res, {
       statusCode: 201,
       success: true,
@@ -55,7 +54,6 @@ export const signup = async (
       data: user,
     });
   } catch (error: any) {
-    await session.abortTransaction();
     next(error);
   }
 };
@@ -74,7 +72,10 @@ export const login = async (
     }
 
     if (user) {
-      const isPasswordMatch = await bcrypt.compare(password, user?.password);
+      const isPasswordMatch = await compareHashedPassword(
+        password,
+        user.password
+      );
 
       if (!isPasswordMatch) {
         throw new Error("Invalid Credentials");
@@ -100,6 +101,116 @@ export const login = async (
   }
 };
 
-export const logout = () => {};
+export const logout = (req: Request, res: Response, next: NextFunction) => {
+  try {
+    res.clearCookie("jwt");
 
-export const update = () => {};
+    return sendResponse(res, {
+      statusCode: 200,
+      success: true,
+      message: "User Logout successfully",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const update = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const userId = req?.user?._id;
+    const { profilePic } = req.body;
+    const { password, ...rest } = req.body;
+    const user: any = await UserModel.findById(userId);
+    if (!user) {
+      throw new Error("User Not Found");
+    }
+
+    const updatableFields = { ...rest };
+    // Dynamically assign fields
+    Object.entries(updatableFields).forEach(([key, value]) => {
+      if (value !== undefined) {
+        user[key] = value;
+      }
+    });
+
+    let hashPassword;
+    if (password) {
+      hashPassword = await generateHashedPassword(password);
+      user.password = hashPassword;
+    }
+    await user.save();
+
+    return sendResponse(res, {
+      statusCode: 200,
+      success: true,
+      message: "User update successfully",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateProfilePIcture = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { profilePic } = req.body;
+    const userId = req?.user?._id;
+
+    if (!profilePic) {
+      throw new Error("Profile picture is required");
+    }
+
+    const picResponse = await cloudinary.uploader.upload(profilePic);
+
+    const user = await UserModel.findByIdAndUpdate(
+      userId,
+      {
+        profilePic: picResponse.secure_url,
+      },
+      { new: true }
+    );
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    return sendResponse(res, {
+      statusCode: 200,
+      success: true,
+      message: "User Login successfully",
+      data: user,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const checkAuth = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const userId = req?.user?._id;
+    const user = await UserModel.findById(userId);
+    if (!user) {
+      throw new Error("User not Active");
+    }
+
+    return sendResponse(res, {
+      statusCode: 200,
+      success: true,
+      message: "User Active",
+      data: user,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
