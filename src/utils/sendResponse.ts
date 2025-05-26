@@ -23,3 +23,14 @@ export const sendResponse = <T>(
     ...(meta && { meta }),
   });
 };
+
+// Example response structure:
+// {
+//   "success": true,
+//   "message": "User created successfully",
+//   "data": {
+//     "email": "example@email.com",
+//     "name": "John Doe",
+//     ...
+//   }
+// }

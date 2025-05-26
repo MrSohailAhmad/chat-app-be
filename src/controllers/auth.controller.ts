@@ -46,12 +46,12 @@ export const signup = async (
 
       await user.save();
     }
-
+    const savedUser = await UserModel.findById(user._id).select("-password");
     return sendResponse(res, {
       statusCode: 201,
       success: true,
       message: "User created successfully",
-      data: user,
+      data: savedUser,
     });
   } catch (error: any) {
     next(error);
