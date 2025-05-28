@@ -5,9 +5,10 @@ import cors from "cors";
 import { connectDB } from "./lib/db";
 import { authRoutes } from "./routes/auth.routes";
 import { globalErrorHandler } from "./middleware/error.middleware";
-
+import { messageRoutes } from "./routes/message.routes";
+import { io, server, app } from "./lib/socket";
 dotenv.config();
-const app = express();
+// const app = express();
 const PORT = process.env.PORT || 3000;
 
 // middlewares
@@ -31,6 +32,7 @@ app.get("/test-error", (req, res) => {
 
 // routes
 app.use("/api/v1/auth", authRoutes);
+app.use("/api/v1/messages", messageRoutes);
 
 // ✅ Catch-all 404 handler
 app.use((req: Request, res: Response) => {
@@ -43,7 +45,7 @@ app.use((req: Request, res: Response) => {
 // Global error handler
 app.use(globalErrorHandler);
 
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
   connectDB();
 });
