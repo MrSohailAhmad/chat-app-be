@@ -10,4 +10,4 @@ export const messageRoutes = express.Router();
 
 messageRoutes.post("/", protectedRoutes, sendMessage);
 messageRoutes.get("/users", protectedRoutes, getUserForSidebar);
-messageRoutes.post("/messages", protectedRoutes, getMessages);
+messageRoutes.get("/:id", protectedRoutes, getMessages);

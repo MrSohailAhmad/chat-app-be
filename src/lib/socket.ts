@@ -22,9 +22,11 @@ io.on("connection", (socket) => {
   console.log("User connected...", socket.id);
   const userId = socket.handshake.query.userId as string | undefined;
   if (typeof userId === "string") {
+    console.log("socket.handshake.query.userId", socket.handshake.query.userId);
     userSocketMap[userId] = socket.id;
 
     io.emit("getOnlineUser", Object.keys(userSocketMap));
+    console.log("Object.keys(userSocketMap)", Object.keys(userSocketMap));
   }
   socket.on("disconnect", () => {
     console.log("User disconnected", socket.id);

@@ -5,7 +5,7 @@ import cloudinary from "../lib/cloudinary";
 
 import { NextFunction, Request, Response } from "express";
 import { sendResponse } from "../utils/sendResponse";
-
+import { io, getReceiverSocketID } from "../lib/socket";
 export const getUserForSidebar = async (
   req: Request,
   res: Response,
@@ -36,7 +36,8 @@ export const getMessages = async (
   try {
     const userId = req.user?._id;
     const { id: userToChatId } = req.params;
-    const message = MessageModel.find({
+
+    const messages = await MessageModel.find({
       $or: [
         {
           sender: userId,
@@ -51,7 +52,7 @@ export const getMessages = async (
     return sendResponse(res, {
       success: true,
       message: "Messages fetched successfully",
-      data: message,
+      data: messages,
     });
   } catch (error) {
     next(error);
@@ -87,13 +88,16 @@ export const sendMessage = async (
 
     await newMessage.save();
 
+    // TODO: implement socket.io to send message to the receiver
+    const receiverSocketId = getReceiverSocketID(receiverId);
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit("newMessage", newMessage);
+    }
     return sendResponse(res, {
       success: true,
       message: "Messages sent successfully",
       data: newMessage,
     });
-
-    // TODO: implement socket.io to send message to the receiver
   } catch (err) {
     next(err);
   }
